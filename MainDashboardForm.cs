@@ -226,40 +226,52 @@ public sealed class MainDashboardForm : ApplicationWindowForm
     {
         if (_backupFreshnessChecked)
             return;
+
         _backupFreshnessChecked = true;
-        if (CurrentUser.UserId <= 0 || !CurrentUser.HasPermission("Backup.Create"))
+
+        if (CurrentUser.UserId <= 0 ||
+            !CurrentUser.HasPermission("Backup.Create"))
             return;
+
         try
         {
-            DataTable history = await Task.Run(DatabaseBackupManager.GetHistory);
+            DateTime? lastSuccessUtc = await Task.Run(
+                DatabaseBackupManager.GetNewestAvailableLocalBackupUtc);
+
             if (IsDisposed)
                 return;
-            // The history grid's exact date-column name isn't relied on here (schema not guaranteed).
-            DateTime? lastSuccess = history.AsEnumerable()
-                .Where(r =>
-                    history.Columns.Contains("Operation") &&
-                    history.Columns.Contains("Status") &&
-                    history.Columns.Contains("FilePath") &&
-                    string.Equals(Convert.ToString(r["Operation"]), "BACKUP", StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(Convert.ToString(r["Status"]), "Success", StringComparison.OrdinalIgnoreCase) &&
-                    r["FilePath"] != DBNull.Value &&
-                    File.Exists(Convert.ToString(r["FilePath"])))
-                .Select(r => (DateTime?)File.GetLastWriteTime(Convert.ToString(r["FilePath"])!))
-                .OrderByDescending(d => d)
-                .FirstOrDefault();
-            bool stale = lastSuccess is null ||
-                (DateTime.Now - lastSuccess.Value).TotalDays > BackupStaleWarningDays;
+
+            bool stale = lastSuccessUtc is null ||
+                (DateTime.UtcNow - lastSuccessUtc.Value).TotalDays
+                    > BackupStaleWarningDays;
+
             if (!stale)
                 return;
-            string message = lastSuccess is null
-                ? "No successful database backup has been recorded yet. Everything entered " +
-                  "into FMSC - admissions, fees - only exists on this " +
-                  "computer until a backup is taken."
-                : $"The last successful database backup was {(DateTime.Now - lastSuccess.Value).Days} " +
-                  "day(s) ago. It's a good idea to take a fresh backup regularly.";
+
+            string message;
+
+            if (lastSuccessUtc is null)
+            {
+                message =
+                    "No valid local database backup could be found. " +
+                    "Everything entered into FMSC - admissions, fees - " +
+                    "only exists on this computer until a backup is taken.";
+            }
+            else
+            {
+                int ageDays = Math.Max(
+                    0,
+                    (int)(DateTime.UtcNow - lastSuccessUtc.Value).TotalDays);
+
+                message =
+                    $"The last successful database backup was {ageDays} " +
+                    "day(s) ago. It's a good idea to take a fresh backup regularly.";
+            }
+
             ModernMessageDialog.Show(
                 this,
-                message + "\n\nGo to Backup / Restore at the bottom of the main navigation to create one now.",
+                message +
+                "\n\nGo to Backup / Restore at the bottom of the main navigation to create one now.",
                 "Backup Reminder",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
@@ -267,7 +279,9 @@ public sealed class MainDashboardForm : ApplicationWindowForm
         catch (Exception ex)
         {
             // Best-effort reminder only - never let this interrupt startup.
-            AppExceptionHandler.LogNonFatal(ex, "Backup Freshness Check");
+            AppExceptionHandler.LogNonFatal(
+                ex,
+                "Backup Freshness Check");
         }
     }
     private void OnScaleChanged(object? sender, EventArgs e)
