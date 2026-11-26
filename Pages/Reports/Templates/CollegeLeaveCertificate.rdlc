@@ -1079,7 +1079,7 @@
           <Paragraph>
             <TextRuns>
               <TextRun>
-                <Value>=IIF(First(Fields!CopyType.Value, "LeaveCertificateData") = "Duplicate", "DUPLICATE COPY", "")</Value>
+                <Value>=IIF(First(Fields!CopyType.Value, "LeaveCertificateData") = "Duplicate", "(DUPLICATE)", "")</Value>
                 <Style>
                   <FontFamily>Segoe UI</FontFamily>
                   <FontSize>12pt</FontSize>
