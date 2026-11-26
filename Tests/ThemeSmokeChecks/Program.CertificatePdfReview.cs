@@ -392,7 +392,7 @@ internal static partial class Program
                 sample.Title+": provisional qualification display matches SQL");
         if(sample.Template is "LeaveCertificate" or "CollegeLeaveCertificate" &&
            sample.Values?.TryGetValue("CopyType",out var copy)==true && Equals(copy,"Duplicate"))
-            Check(html.Contains("DUPLICATE COPY",StringComparison.Ordinal),
+            Check(html.Contains("(DUPLICATE)",StringComparison.Ordinal),
                 sample.Title+": the saved duplicate is visibly marked");
 
         return report.Render("PDF");
