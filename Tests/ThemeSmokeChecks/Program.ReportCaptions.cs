@@ -71,7 +71,7 @@ internal static partial class Program
                             element => (string?)element.Attribute("Name")=="txtCopyType");
                         var values = copyLabel.Descendants(ns+"TextRun")
                             .Select(run => (string?)run.Element(ns+"Value")).ToArray();
-                        Check(values.Length==1 && values[0]!.Contains("DUPLICATE COPY",StringComparison.Ordinal),
+                        Check(values.Length==1 && values[0]!.Contains("(DUPLICATE)",StringComparison.Ordinal),
                             name+" prints no stray red parentheses on an original and labels duplicates.");
                     }
                 }
