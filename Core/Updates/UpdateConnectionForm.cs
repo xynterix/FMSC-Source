@@ -475,7 +475,7 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
                 _latestVersion.Text = release.Manifest.Version;
                 _accessButton.Text = "Computer Authorized";
                 _status.Text = $"No compatible update. Your database uses schema {_installedSchema}, " +
-                    $"but the latest app version ({release.Manifest.Version} ) supports schema {release.Manifest.RequiredDatabaseSchema}. " +
+                    $"but the latest app version ({release.Manifest.Version}) supports schema {release.Manifest.RequiredDatabaseSchema}. " +
                     "Ask your administrator for a compatible release. Do not downgrade or replace your data.";
                 return;
             }
