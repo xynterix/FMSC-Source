@@ -306,7 +306,7 @@ internal static partial class Program
             Check(status.Text.StartsWith("Verifying"), "Staging remains part of verification, never installation");
             dialog.ApplyDownloadProgress(transfer with { Phase = UpdateDownloadPhase.Ready, ReceivedBytes = 20 * 1048576,
                 TimeRemaining = null, Message = "Download verified and prepared." });
-            Check(bar.Value == 100 && status.Text.StartsWith("Ready to Install") && !Find(dialog, "Install Update").Enabled,
+            Check(bar.Value == 100 && status.Text.StartsWith("Ready to install") && !Find(dialog, "Install Update").Enabled,
                 "A complete progress bar alone cannot bypass the validated installer handoff");
             Find(dialog, "Close").PerformClick(); Application.DoEvents();
             Check(dialog.IsDisposed, "A progress window remains dismissible");
