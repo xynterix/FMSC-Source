@@ -104,7 +104,7 @@ internal static partial class Program
             var checkMethod = typeof(UpdateConnectionForm).GetMethod("CheckNowAsync", fields)!;
             ((Task)checkMethod.Invoke(dialog, null)!).GetAwaiter().GetResult();
             Check(deniedChecks == 1 && !Find(dialog, "Check for Updates").Enabled &&
-                  Descendants(dialog).OfType<Label>().Any(label => label.Text.Contains("Verify computer access")),
+                  Descendants(dialog).OfType<Label>().Any(label => label.Text.Contains("Verify access")),
                 "Even a direct update check call refuses an unverified local key");
             var viewport = Descendants(dialog).OfType<ResponsiveViewport>().Single();
             Check(!viewport.HorizontalScroll.Visible && !viewport.VerticalScroll.Visible,
