@@ -149,7 +149,7 @@ internal static partial class Program
             var panel = (Panel)typeof(UpdateConnectionForm).GetField("_authorizationPanel", fields)!.GetValue(pending)!;
             Check(!panel.Visible, "Menu key stays hidden while live verification is pending");
             var status = (Label)typeof(UpdateConnectionForm).GetField("_status", fields)!.GetValue(pending)!;
-            PumpUntil(() => status.Text.Contains("not been verified"), "Unapproved menu access shows key recovery");
+            PumpUntil(() => status.Text.Contains("not verified"), "Unapproved menu access shows key recovery");
             Check(authorizations == 1 && panel.Visible &&
                   Find(pending, "Verify access").Enabled &&
                   !Find(pending, "Check for Updates").Enabled,
@@ -211,7 +211,7 @@ internal static partial class Program
             var panel = (Panel)typeof(UpdateConnectionForm).GetField("_authorizationPanel", fields)!.GetValue(startup)!;
             Check(!panel.Visible, "Saved startup key starts hidden during verification");
             var status = (Label)typeof(UpdateConnectionForm).GetField("_status", fields)!.GetValue(startup)!;
-            PumpUntil(() => status.Text.Contains("not been verified"), "Denied startup key presents access recovery");
+            PumpUntil(() => status.Text.Contains("not verified"), "Denied startup key presents access recovery");
             Check(authorizations == 1 && panel.Visible && Find(startup, "Verify access").Enabled &&
                   !Find(startup, "Check for Updates").Enabled,
                 "Denied startup authorization reveals the public key and never checks the repository");
