@@ -620,7 +620,7 @@ internal interface IStudentCertificateWorkspaceEditor
     bool CanPrintFromWorkspace { get; }
     bool CanCollectFromWorkspace { get; }
     bool CanIssueAgainFromWorkspace { get; }
-    string? IssueAgainUnavailableReason { get; }
+    string? IssueAgainUnavailableReason => null;
 
     // These delegate to the very same handlers used by the original forms.
     void PrintFromWorkspace();
