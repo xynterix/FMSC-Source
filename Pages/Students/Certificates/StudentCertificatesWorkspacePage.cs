@@ -568,7 +568,16 @@ public sealed class StudentCertificatesWorkspacePage : V2Page, IBusyPage
                     break;
                 case "reissue":
                     if (!workflow.CanIssueAgainFromWorkspace)
+                    {
+                        string? unavailableReason = workflow.IssueAgainUnavailableReason;
+                        if (!string.IsNullOrWhiteSpace(unavailableReason))
+                        {
+                            operationFeedback = unavailableReason;
+                            SetStatus(unavailableReason);
+                            break;
+                        }
                         throw new InvalidOperationException("Select the eligible latest collected copy to issue again.");
+                    }
                     await workflow.IssueAgainFromWorkspaceAsync();
                     break;
                 default:
@@ -611,6 +620,7 @@ internal interface IStudentCertificateWorkspaceEditor
     bool CanPrintFromWorkspace { get; }
     bool CanCollectFromWorkspace { get; }
     bool CanIssueAgainFromWorkspace { get; }
+    string? IssueAgainUnavailableReason { get; }
 
     // These delegate to the very same handlers used by the original forms.
     void PrintFromWorkspace();
