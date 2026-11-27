@@ -104,7 +104,7 @@ internal static partial class Program
             var checkMethod = typeof(UpdateConnectionForm).GetMethod("CheckNowAsync", fields)!;
             ((Task)checkMethod.Invoke(dialog, null)!).GetAwaiter().GetResult();
             Check(deniedChecks == 1 && !Find(dialog, "Check for Updates").Enabled &&
-                  Descendants(dialog).OfType<Label>().Any(label => label.Text.Contains("Verify computer access")),
+                  Descendants(dialog).OfType<Label>().Any(label => label.Text.Contains("Verify access")),
                 "Even a direct update check call refuses an unverified local key");
             var viewport = Descendants(dialog).OfType<ResponsiveViewport>().Single();
             Check(!viewport.HorizontalScroll.Visible && !viewport.VerticalScroll.Visible,
@@ -149,7 +149,7 @@ internal static partial class Program
             var panel = (Panel)typeof(UpdateConnectionForm).GetField("_authorizationPanel", fields)!.GetValue(pending)!;
             Check(!panel.Visible, "Menu key stays hidden while live verification is pending");
             var status = (Label)typeof(UpdateConnectionForm).GetField("_status", fields)!.GetValue(pending)!;
-            PumpUntil(() => status.Text.Contains("not been verified"), "Unapproved menu access shows key recovery");
+            PumpUntil(() => status.Text.Contains("not verified"), "Unapproved menu access shows key recovery");
             Check(authorizations == 1 && panel.Visible &&
                   Find(pending, "Verify access").Enabled &&
                   !Find(pending, "Check for Updates").Enabled,
@@ -211,7 +211,7 @@ internal static partial class Program
             var panel = (Panel)typeof(UpdateConnectionForm).GetField("_authorizationPanel", fields)!.GetValue(startup)!;
             Check(!panel.Visible, "Saved startup key starts hidden during verification");
             var status = (Label)typeof(UpdateConnectionForm).GetField("_status", fields)!.GetValue(startup)!;
-            PumpUntil(() => status.Text.Contains("not been verified"), "Denied startup key presents access recovery");
+            PumpUntil(() => status.Text.Contains("not verified"), "Denied startup key presents access recovery");
             Check(authorizations == 1 && panel.Visible && Find(startup, "Verify access").Enabled &&
                   !Find(startup, "Check for Updates").Enabled,
                 "Denied startup authorization reveals the public key and never checks the repository");
@@ -306,7 +306,7 @@ internal static partial class Program
             Check(status.Text.StartsWith("Verifying"), "Staging remains part of verification, never installation");
             dialog.ApplyDownloadProgress(transfer with { Phase = UpdateDownloadPhase.Ready, ReceivedBytes = 20 * 1048576,
                 TimeRemaining = null, Message = "Download verified and prepared." });
-            Check(bar.Value == 100 && status.Text.StartsWith("Ready to Install") && !Find(dialog, "Install Update").Enabled,
+            Check(bar.Value == 100 && status.Text.StartsWith("Ready to install") && !Find(dialog, "Install Update").Enabled,
                 "A complete progress bar alone cannot bypass the validated installer handoff");
             Find(dialog, "Close").PerformClick(); Application.DoEvents();
             Check(dialog.IsDisposed, "A progress window remains dismissible");

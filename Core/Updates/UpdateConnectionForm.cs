@@ -111,7 +111,7 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
             Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter,
             ForeColor = AppTheme.Text, Margin = new Padding(3, 4, 3, 10) };
         summary.Controls.Add(_latestVersion, 1, 1);
-        _downloadDetails = new Label { Text = "Check for an approved update when you are ready.", AutoSize = true,
+        _downloadDetails = new Label { Text = "Check for updates when ready.", AutoSize = true,
             Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, ForeColor = AppTheme.MutedText };
         summary.Controls.Add(_downloadDetails, 0, 2); summary.SetColumnSpan(_downloadDetails, 2);
         // Show the computer's authorization state on the centered action itself.
@@ -122,8 +122,8 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
         enrollment.RowStyles.Add(new RowStyle(SizeType.Absolute, AppScale.S(48)));
         enrollment.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         enrollment.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        enrollment.Controls.Add(new Label { Text = "Generate a key and send its public half to the software owner. " +
-            "The owner authorizes this computer for read-only access. No school GitHub account is needed.",
+        enrollment.Controls.Add(new Label { Text = "Generate a key and send it to the software owner for approval. " +
+            "No GitHub account is needed.",
             Dock = DockStyle.Fill, ForeColor = AppTheme.MutedText }, 0, 0);
         _publicKey = new TextBox { Dock = DockStyle.Fill, ReadOnly = true, Multiline = true,
             ScrollBars = ScrollBars.Vertical, WordWrap = true, Font = AppTheme.SmallFont,
@@ -170,7 +170,7 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
         _copy.Click += (_, _) => {
             if (string.IsNullOrWhiteSpace(_publicKey.Text)) return;
             try { Clipboard.SetText(_publicKey.Text); _status.Text = "Public key copied."; }
-            catch (ExternalException) { _status.Text = "Clipboard unavailable. Select and copy the public key manually."; }
+            catch (ExternalException) { _status.Text = "Clipboard unavailable. Copy the public key manually."; }
         };
         _check.Click += async (_, _) => await CheckNowAsync();
         _download.Click += async (_, _) => await DownloadAsync();
@@ -272,7 +272,7 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
         _progress.Value = state.Percent;
         string stage = state.Phase switch {
             UpdateDownloadPhase.Verifying or UpdateDownloadPhase.Preparing => "Verifying",
-            UpdateDownloadPhase.Ready => "Ready to Install",
+            UpdateDownloadPhase.Ready => "Ready to install",
             UpdateDownloadPhase.Failed => "Download stopped",
             _ => "Downloading"
         };
@@ -317,24 +317,24 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
             _accessButton.Text = checkingSavedKey ? "Verifying Computer Access" :
                 _hasAuthorization ? "Computer Authorized" :
                 _hasKey ? "Computer Key Ready" : "Authorize This Computer";
-            _status.Text = _hasAuthorization ? "Select Check for Updates to contact the private update repository." :
-                _hasKey ? "Send this public key to the software owner. After approval, select Verify access." :
-                "Generate a key and have the software owner authorize this computer.";
+            _status.Text = _hasAuthorization ? "Select Check for Updates to check for a release." :
+                _hasKey ? "Send your public key to the owner, then verify access." :
+                "Generate a key and ask the owner to authorize this computer.";
             int applicationSchema = int.Parse(DatabaseHelper.RequiredDatabaseSchemaVersion);
             if (_installedSchema < applicationSchema)
                 _status.Text = "Your school database needs an update before sign-in.\r\n\r\n" +
                     (_hasAuthorization ? "Choose Check for Updates to see whether a newer approved release is published. " +
                         "If an update is available, download it and choose Install Update; FMSC Setup will back up your school data before applying migrations. " +
                         "If none is available, contact your administrator for the required database update." :
-                        "Ask the administrator to authorize this computer before checking for a published update. No database changes have been made.");
+                        "Ask the administrator to authorize this computer first. No database changes were made.");
             else if (_installedSchema > applicationSchema)
                 _status.Text = "Your school database uses a newer schema than this application.\r\n\r\n" +
                     (_hasAuthorization ? "Choose Check for Updates to look for a published application release compatible with your database. " +
                         "If none is available, contact your administrator. Do not downgrade or replace your school data." :
-                        "Ask the administrator to authorize this computer before checking for a compatible application. Do not downgrade the database.");
+                        "Ask the administrator to authorize this computer first. Do not downgrade the database.");
             if (checkingSavedKey)
-                _status.Text = "Verifying this computer's saved update access. " +
-                    "The published release check will start automatically when access is confirmed.";
+                _status.Text = "Verifying access. " +
+                    "Update check starts automatically when approved.";
         }
         catch (Exception error) when (error is CryptographicException or IOException or UnauthorizedAccessException or InvalidDataException)
         {
@@ -348,8 +348,8 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
             _authorizationPanel.Visible = true;
             _check.Visible = true;
             SetContentSize(true);
-            _status.Text = "This Windows user's protected authorization could not be read. " +
-                "Contact the software owner; no key was replaced. " + error.GetType().Name;
+            _status.Text = "Could not read this Windows user's protected authorization. " +
+                "Contact the software owner. No key was replaced. " + error.GetType().Name;
         }
     }
 
@@ -364,7 +364,7 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
         }
         catch (Exception error) when (error is CryptographicException or IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            _status.Text = "Unable to prepare this computer's update authorization: " + error.Message;
+            _status.Text = "Could not prepare update authorization: " + error.Message;
         }
     }
 
@@ -378,12 +378,12 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
         if (!_hasKey || _hasAuthorization || _verifyingAuthorization) return;
         _verifyingAuthorization = true;
         _verify.Enabled = false;
-        _status.Text = "Verifying this computer's read-only access with the software owner's repository...";
+        _status.Text = "Verifying access...";
         try
         {
             if (!_networkAvailable())
             {
-                _status.Text = "Unable to verify access while offline. Connect to the internet and select Verify access again.";
+                _status.Text = "You're offline. Connect and try Verify access again.";
                 return;
             }
             await _verifyAuthorization(_lifetime.Token);
@@ -403,8 +403,8 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
             or System.ComponentModel.Win32Exception)
         {
             if (!IsDisposed && !Disposing)
-                _status.Text = "Computer access has not been verified. The key may still need the owner's approval, " +
-                    "or the connection may be unavailable. Select Verify access to retry. " + error.Message;
+                _status.Text = "Access not verified. Check owner approval " +
+                    "or your connection, then retry. " + error.Message;
         }
         finally
         {
@@ -432,8 +432,8 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
         if (!_hasAuthorization)
         {
             _check.Enabled = false;
-            _status.Text = _hasKey ? "Verify computer access before checking for updates." :
-                "Generate a key and obtain the owner's approval before checking for updates.";
+            _status.Text = _hasKey ? "Verify access before checking for updates." :
+                "Generate a key and get owner approval first.";
             return;
         }
         _showTransferStats = _transferStats.Visible = false;
@@ -446,21 +446,21 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
         _release = null;
         _prepared = null;
         _install.Enabled = _install.Visible = false;
-        _status.Text = "Checking the private update repository without interrupting FMSC...";
+        _status.Text = "Checking for updates...";
         _progress.Visible = true;
         _progress.Style = ProgressBarStyle.Marquee;
         try
         {
             if (!_networkAvailable())
             {
-                _status.Text = "This computer is offline. Connect to the internet, then choose Check for Updates again. Your school records have not been changed.";
+                _status.Text = "You're offline. Connect to the internet and try again. Your data is unchanged.";
                 return;
             }
             await using var session = await UpdateGitSession.OpenAsync(_lifetime.Token);
             if (!await session.HasStableFeedAsync(_lifetime.Token))
             {
-                _status.Text = "No approved FMSC release is published on this update channel yet. " +
-                    "Unpublished development changes are not available to install. Ask your administrator for a compatible published release.";
+                _status.Text = "No approved update has been published yet. " +
+                    "Development changes aren't available to install. Ask your administrator for a published release.";
                 _accessButton.Text = "Computer Authorized";
                 _latestVersion.Text = "No release published";
                 return;
@@ -474,9 +474,9 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
             {
                 _latestVersion.Text = release.Manifest.Version;
                 _accessButton.Text = "Computer Authorized";
-                _status.Text = $"No compatible application update is published. Your database uses schema {_installedSchema}, " +
-                    $"but the latest published application (version {release.Manifest.Version}) supports schema {release.Manifest.RequiredDatabaseSchema}. " +
-                    "Ask your administrator for a release that supports your database. Do not downgrade or replace your school data.";
+                _status.Text = $"No compatible update. Your database uses schema {_installedSchema}, " +
+                    $"but the latest app version ({release.Manifest.Version}) supports schema {release.Manifest.RequiredDatabaseSchema}. " +
+                    "Ask your administrator for a compatible release. Do not downgrade or replace your data.";
                 return;
             }
             _method = await Task.Run(() => UpdateReleasePreparer.Choose(release, InstalledVersion,
@@ -489,15 +489,15 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
             _status.Text = "Latest published version: " + release.Manifest.Version + "\n" +
                 (_method == UpdateDownloadChoice.NotNewer
                     ? _installedSchema == int.Parse(DatabaseHelper.RequiredDatabaseSchemaVersion)
-                        ? "No newer approved application release is available on this update channel. " +
-                          "This checks published releases only; unpublished development changes are not included."
-                        : "No newer approved application release is available, and the database schema does not match this application. " +
-                          "Ask your administrator for a compatible release or the required database migration. Do not replace or downgrade the database."
+                        ? "You're using the latest published version. " +
+                          "Only published releases are checked."
+                        : "No newer release is available, and your database schema doesn't match. " +
+                          "Contact your administrator. Do not downgrade or replace the database."
                     :
                  _method == UpdateDownloadChoice.RequiresDatabaseInstaller ?
-                 "Update available — Full package; database migration will run through the installer after FMSC closes. " +
+                 "Update available — Full package; database migration runs after FMSC closes. " +
                     (archive.Length / 1048576d).ToString("N1") + " MB." :
-                 "Update available — " + _method + ", approximately " + (archive.Length / 1048576d).ToString("N1") + " MB.");
+                 "Update available — " + _method + ", " + (archive.Length / 1048576d).ToString("N1") + " MB.");
             if (_method == UpdateDownloadChoice.RequiresDatabaseInstaller) _method = UpdateDownloadChoice.Full;
             bool canDownload = _method is UpdateDownloadChoice.Full or UpdateDownloadChoice.Incremental;
             // An authorized release is not yet a final download decision:
@@ -505,11 +505,11 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
             SetDownloadActionVisible(false);
             _install.Visible = false;
             _downloadDetails.Text = canDownload ? _method + " · approximately " +
-                (archive.Length / 1048576d).ToString("N1") + " MB" : "No newer published package available";
+                (archive.Length / 1048576d).ToString("N1") + " MB" : "No update available";
             if (canDownload)
             {
                 string checkedStatus = _status.Text;
-                _status.Text = "Checking previously prepared update against the approved release…";
+                _status.Text = "Checking saved update...";
                 // The manual check already authenticated to the current private
                 // Git feed. Reuse an old stage only if its exact manifest matches
                 // that feed AND every staged file passes the installer handoff.
@@ -522,9 +522,9 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
                     _download.Enabled = _download.Visible = false;
                     _install.Enabled = _install.Visible = true;
                     _downloadDetails.Text = saved.Method + " · downloaded and verified (reused)";
-                    _status.Text = "Ready to Install" + Environment.NewLine +
-                        "Saved update rechecked against the private repository and all application files. " +
-                        "The update is not installed yet.";
+                    _status.Text = "Ready to install" + Environment.NewLine +
+                        "Saved update verified. " +
+                        "It isn't installed yet.";
                 }
                 else
                 {
@@ -542,9 +542,9 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
                                          or System.ComponentModel.Win32Exception or InvalidOperationException)
         {
             if (!IsDisposed && !Disposing)
-                _status.Text = "Unable to check updates safely: " + error.Message +
-                    "\r\n\r\nCheck your internet connection, then choose Check for Updates to try again. " +
-                    "If the internet is working, ask the administrator to check this computer's update access.";
+                _status.Text = "Update check failed: " + error.Message +
+                    "\r\n\r\nCheck your connection and retry. " +
+                    "If it still fails, ask your administrator to check update access.";
         }
         finally
         {
@@ -566,7 +566,7 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
         SetContentSize(_authorizationPanel.Visible);
         var archive = _method == UpdateDownloadChoice.Incremental ? _release.Manifest.Incremental! : _release.Manifest.Full;
         ApplyDownloadProgress(new(UpdateDownloadPhase.Connecting, 0, archive.Length, 0, TimeSpan.Zero, null,
-            0, archive.Parts.Count, 1, 0, "Connecting to the update repository…", _method));
+            0, archive.Parts.Count, 1, 0, "Connecting...", _method));
         _transferTimer.Start();
         IProgress<UpdateDownloadProgress> progress = new Progress<UpdateDownloadProgress>(state => {
             if (generation == _downloadGeneration) ApplyDownloadProgress(state);
@@ -582,13 +582,13 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
                 {
                     progress.Report(new(UpdateDownloadPhase.Connecting, 0, archive.Length, 0, _downloadWatch.Elapsed, null,
                         0, archive.Parts.Count, ++connectionAttempt, 0,
-                        $"Connecting to the update repository (attempt {connectionAttempt}/{UpdateRetry.MaximumAttempts})…", _method));
+                        $"Connecting (attempt {connectionAttempt}/{UpdateRetry.MaximumAttempts})...", _method));
                     return UpdateGitSession.OpenAsync(token);
                 }
                 await using var session = await UpdateRetry.RunAsync(Connect, token,
                     (attempt, wait) => progress.Report(new(UpdateDownloadPhase.Retrying, 0, archive.Length, 0,
                         _downloadWatch.Elapsed, null, 0, archive.Parts.Count, attempt, 0,
-                        $"Connecting failed. Retrying in {wait.TotalSeconds:0}s (attempt {attempt}/{UpdateRetry.MaximumAttempts})…", _method)));
+                        $"Connection failed. Retrying in {wait.TotalSeconds:0}s (attempt {attempt}/{UpdateRetry.MaximumAttempts})...", _method)));
                 return await UpdateReleasePreparer.PrepareAsync(release, session, _method,
                     AppContext.BaseDirectory, root, token, progress, Path.Combine(UpdateDeviceKey.StateDirectory, "download-cache"));
             }, token);
@@ -602,14 +602,14 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
                     ApplyDownloadProgress(last with { Phase = UpdateDownloadPhase.Ready,
                         TotalBytes = completedArchive.Length, ReceivedBytes = completedArchive.Length,
                         Method = prepared.Method, VerifiedBytes = completedArchive.Length,
-                        Elapsed = _downloadWatch.Elapsed, TimeRemaining = null, Message = "Download complete. Update verified and ready to install." });
+                        Elapsed = _downloadWatch.Elapsed, TimeRemaining = null, Message = "Update verified. Ready to install." });
                 _prepared = prepared;
                 _install.Enabled = true;
                 _install.Visible = true;
                 _download.Visible = false;
                 _downloadDetails.Text = prepared.Method + " · downloaded and verified";
-                _status.Text = "Ready to Install" + Environment.NewLine +
-                    "Downloaded and verified. The update is not installed yet. Choose Install Update when you are ready.";
+                _status.Text = "Ready to install" + Environment.NewLine +
+                    "Update ready. Select Install Update when you're ready.";
             }
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
@@ -622,8 +622,8 @@ internal sealed class UpdateConnectionForm : ApplicationWindowForm
                 if (_lastTransfer is { } last)
                     ApplyDownloadProgress(last with { Phase = UpdateDownloadPhase.Failed, ReceivedBytes = last.VerifiedBytes,
                         BytesPerSecond = 0, TimeRemaining = null, Elapsed = _downloadWatch.Elapsed,
-                        Message = "Download stopped. Verified chunks are saved for retry." });
-                _status.Text = "Update could not be prepared: " + error.Message + " Verified chunks are saved for retry.";
+                        Message = "Download stopped. Verified data is saved for retry." });
+                _status.Text = "Update preparation failed: " + error.Message + " Verified data is saved for retry.";
                 _download.Text = "Retry Download";
                 _download.Enabled = true;
             }

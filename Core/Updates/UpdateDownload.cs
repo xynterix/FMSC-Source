@@ -56,7 +56,7 @@ internal sealed class UpdateDownloadMeter
     private TimeSpan lastNetwork, retryUntil;
     private UpdateDownloadPhase phase;
     private UpdateDownloadChoice method;
-    private string message = "Connecting to the update repository…";
+    private string message = "Connecting...";
 
     internal UpdateDownloadMeter(IProgress<UpdateDownloadProgress>? progress, Func<TimeSpan>? clock = null)
     {
@@ -74,7 +74,7 @@ internal sealed class UpdateDownloadMeter
         {
             part = number; partLength = length; attempt = nextAttempt; inFlight = attemptBytes = 0;
             phase = UpdateDownloadPhase.Downloading;
-            message = $"Downloading {method.ToString().ToLowerInvariant()} update · part {part} of {count}";
+            message = $"Downloading update · part {part} of {count}";
         }
         Emit();
     }
@@ -109,7 +109,7 @@ internal sealed class UpdateDownloadMeter
     }
     internal void Fail()
     {
-        lock (sync) { inFlight = 0; phase = UpdateDownloadPhase.Failed; message = "Download stopped. Verified chunks are saved for retry."; }
+        lock (sync) { inFlight = 0; phase = UpdateDownloadPhase.Failed; message = "Download stopped. Verified data is saved for retry."; }
         Emit();
     }
     internal UpdateDownloadProgress Snapshot()
@@ -181,7 +181,7 @@ internal static class UpdatePartDownload
                     }
                     await transfer; // Always observe completion/cleanup before cancelling staging.
                     token.ThrowIfCancellationRequested();
-                    meter.SetPhase(UpdateDownloadPhase.Verifying, $"Verifying part {index + 1} of {archive.Parts.Count}…");
+                    meter.SetPhase(UpdateDownloadPhase.Verifying, $"Verifying part {index + 1}/{archive.Parts.Count}...");
                     if (!Valid(incoming, part)) throw new InvalidDataException("Downloaded part failed SHA-256 verification.");
                     // Concurrent readers can share verified chunks; never overwrite a winner.
                     try { File.Move(incoming, saved); }
@@ -193,7 +193,7 @@ internal static class UpdatePartDownload
             else
             {
                 meter.StartPart(index + 1, part.Length, 0);
-                meter.SetPhase(UpdateDownloadPhase.Downloading, $"Reusing verified part {index + 1} of {archive.Parts.Count}…");
+                meter.SetPhase(UpdateDownloadPhase.Downloading, $"Reusing verified part {index + 1}/{archive.Parts.Count}...");
             }
             File.Copy(saved, Path.Combine(partDirectory, part.Name));
             meter.CompletePart(part.Length, cached);
