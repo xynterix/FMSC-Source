@@ -1218,6 +1218,10 @@ public sealed class CollegeLeaveCertificatePage : V2Page, IUnsavedChanges, IStud
     bool IStudentCertificateWorkspaceEditor.CanPrintFromWorkspace => printButton.Enabled;
     bool IStudentCertificateWorkspaceEditor.CanCollectFromWorkspace => collectButton.Enabled;
     bool IStudentCertificateWorkspaceEditor.CanIssueAgainFromWorkspace => issueAgainButton.Enabled;
+    string? IStudentCertificateWorkspaceEditor.IssueAgainUnavailableReason =>
+        DuplicateLimitReached()
+            ? $"The maximum number of certificate issuances (1 original + {MaxDuplicateIssues} duplicates) has already been reached for this student. No further copies can be issued."
+            : null;
 
     void IStudentCertificateWorkspaceEditor.PrintFromWorkspace()
     {
