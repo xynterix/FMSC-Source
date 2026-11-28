@@ -29,7 +29,9 @@ internal sealed class RegistrationEntryDialog : ApplicationWindowForm
         page.PrepareForEmbedding(keepActions: false);
         var save = new ModernButton { Text = "Save Registration", ThemeRole = "Success", AutoSize = true };
         saveRegistrationButton = save;
-        SetSaveShortcut(save);
+        // Register the hint with the dialog so Ctrl-held badges and the tooltip
+        // remain visible while the embedded registration page owns focus.
+        ShortcutController.RegisterShortcut(save, Keys.Control | Keys.S, "Ctrl+S", save.PerformClick);
         var close = new ModernButton { Text = "Close", AutoSize = true };
         var actions = HumanUi.ButtonRow(save, close); actions.Dock = DockStyle.Fill;
         var root = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2 };
