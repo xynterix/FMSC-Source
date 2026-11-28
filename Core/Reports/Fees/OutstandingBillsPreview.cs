@@ -16,7 +16,14 @@ internal static class OutstandingBillsPreview
         if(!Current())return;
         if(!accounts.Any(s=>s.Due>0m)){notify("There are no posted outstanding charges for these students.");return;}
         var selected=accounts.ToArray();
-        string notice=string.Join("\n",selected.Where(s=>s.Notice.Length>0).Select(s=>s.Notice));
+        var incomplete=selected.Where(s=>s.Notice.Length>0).ToArray();
+        int awaitingReturn=incomplete.Count(s=>s.Readiness=="Awaiting Return");
+        int placementReview=incomplete.Count(s=>s.Readiness=="Review Placement");
+        var noticeLines=new List<string>();
+        if(awaitingReturn>0)noticeLines.Add($"{awaitingReturn:N0} student{(awaitingReturn==1?" is":"s are")} awaiting return.");
+        if(placementReview>0)noticeLines.Add($"{placementReview:N0} student{(placementReview==1?" requires":"s require")} placement review.");
+        string notice=incomplete.Length==0 ? "" :
+            string.Join("\n",noticeLines)+"\n\nTheir new-year opening charges may not exist yet. This bill contains only posted outstanding charges, including older dues.\nPrinting does not confirm a return or create charges.";
         if(notice.Length>0&&!ModernMessageDialog.Confirm(owner,notice+"\n\nPrint posted outstanding charges only?","Billing Readiness",defaultYes:false))return;
         if(!Current())return;
         var groups=FeeBillSelection.Groups(selected,byFamily);
