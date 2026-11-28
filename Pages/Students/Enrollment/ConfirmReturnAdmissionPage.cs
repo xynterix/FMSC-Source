@@ -61,7 +61,7 @@ public sealed partial class ConfirmReturnAdmissionPage : V2Page, IUnsavedChanges
         Fees=feeRows?.AsEnumerable().OrderBy(row=>Convert.ToInt32(row["FeeTypeId"])).Select(row=>new{
             Id=Convert.ToInt32(row["FeeTypeId"]),Amount=Convert.ToString(row["Amount"],System.Globalization.CultureInfo.InvariantCulture),Discount=Convert.ToString(row["DiscountAmount"],System.Globalization.CultureInfo.InvariantCulture)})});
     private void CaptureReturnDraftBaseline()=>returnDraftBaseline=ReturnDraftState();
-    public bool HasUnsavedChanges=>pendingStudent.SelectedId>0&&feeRows is not null&&returnDraftBaseline is not null&&(fees.IsCurrentCellDirty||returnDraftBaseline!=ReturnDraftState());
+    public bool HasUnsavedChanges => false; // Return-admission choices are intentionally not guarded by an unsaved-changes prompt.
     public string UnsavedChangesMessage=>"The return admission has unsaved opening-fee, discount, date or transport changes. Discard them?";
     public bool IsBusy=>confirmingReturn;
     public string BusyMessage=>"Return admission is being confirmed. Wait for its result before leaving.";
@@ -497,7 +497,19 @@ public sealed partial class ConfirmReturnAdmissionPage : V2Page, IUnsavedChanges
                     StudentFlow.FeeCollection(primary: true));
             }
         }
-        catch (Exception ex) { Fail(ex); }
+        catch (Exception ex)
+        {
+            string errorText = ex.ToString();
+            if (errorText.Contains("transport", StringComparison.OrdinalIgnoreCase) &&
+                errorText.Contains("monthly", StringComparison.OrdinalIgnoreCase) &&
+                errorText.Contains("fee", StringComparison.OrdinalIgnoreCase))
+            {
+                // A rejected transport choice must not remain selected when the dialog returns.
+                transport.Checked = false;
+                CaptureReturnDraftBaseline();
+            }
+            Fail(ex);
+        }
     }
     /// <summary>Prints the just-confirmed student's bill (their posted, unpaid charges) on the thermal slip.</summary>
     private async Task PrintBillAsync(int admissionId)
