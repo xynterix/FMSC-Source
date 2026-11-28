@@ -864,12 +864,6 @@ public sealed partial class StudentAccountStatementPage : V2Page, IBusyPage
             Grid.Columns["TransactionDate"].DefaultCellStyle.Format = "dd-MM-yyyy";
         if (Grid.Columns.Contains("BillingMonth"))
             Grid.Columns["BillingMonth"].DefaultCellStyle.Format = "MMM yyyy";
-        if (Grid.Columns.Contains("DebitAmount"))
-            Grid.Columns["DebitAmount"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-        if (Grid.Columns.Contains("PaidAmount"))
-            Grid.Columns["PaidAmount"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-        if (Grid.Columns.Contains("Balance"))
-            Grid.Columns["Balance"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
         int index = 0;
         foreach (string name in new[]
                  {
