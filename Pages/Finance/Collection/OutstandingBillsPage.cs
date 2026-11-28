@@ -49,7 +49,6 @@ public sealed class OutstandingBillsPage : V2Page,IBusyPage
             ("AcademicYear","Academic Year",115),("Outstanding","Outstanding (Rs.)",140)})
             Grid.Columns.Add(new DataGridViewTextBoxColumn{Name=field,DataPropertyName=field,HeaderText=label,ReadOnly=true,MinimumWidth=width,AutoSizeMode=DataGridViewAutoSizeColumnMode.Fill,SortMode=DataGridViewColumnSortMode.NotSortable});
         Grid.Columns["Outstanding"].DefaultCellStyle.Format="N0";
-        Grid.Columns["Outstanding"].DefaultCellStyle.Alignment=DataGridViewContentAlignment.MiddleRight;
         Grid.DataSource=selectionSource;
         Grid.CurrentCellDirtyStateChanged+=(_,_)=>{if(Grid.IsCurrentCellDirty)Grid.CommitEdit(DataGridViewDataErrorContexts.Commit);};
         Grid.CellValueChanged+=(_,_)=>{if(!changingSelection)UpdateSummary();};
