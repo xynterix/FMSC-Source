@@ -295,7 +295,7 @@ public sealed partial class StudentAccountStatementPage
                     (column.ValueType==typeof(decimal)?Convert.ToDecimal(row[column.Name])!=0m:!string.IsNullOrWhiteSpace(Convert.ToString(row[column.Name])))))column.Visible=false;
             column.MinimumWidth=AppScale.Scale(column.Name is "ReceiptNumber" or "OriginalReceipt"?145:column.ValueType==typeof(decimal)?95:110);
             column.FillWeight=column.Name is "StudentName" or "Student" or "StatementStudent" or "FeeTypeName" or "Fee" or "Reason" or "Remarks"?160:100;
-            if(column.ValueType==typeof(decimal)){column.DefaultCellStyle.Format="N0";column.DefaultCellStyle.Alignment=DataGridViewContentAlignment.MiddleRight;}
+            if(column.ValueType==typeof(decimal))column.DefaultCellStyle.Format="N0";
             if(column.ValueType==typeof(DateTime))column.DefaultCellStyle.Format=column.Name is "BillingMonth" or "Billing Month" or "FeePeriod"?"MMM yyyy":"dd MMM yyyy";
             column.HeaderText=AccountColumnLabel(column.Name);
         }
