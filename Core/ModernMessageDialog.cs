@@ -67,7 +67,7 @@ public static class ModernMessageDialog
         int width = Math.Min(AppScale.Scale(family ? 900 : content.Records is null ? 560 : 800),
             Math.Max(1, work.Width - AppScale.Scale(32)));
         var form = new ApplicationWindowForm {
-            Text = title, StartPosition = owner is null ? FormStartPosition.CenterScreen : FormStartPosition.CenterParent,
+            Text = title, StartPosition = family ? FormStartPosition.Manual : owner is null ? FormStartPosition.CenterScreen : FormStartPosition.CenterParent,
             FormBorderStyle = FormBorderStyle.FixedDialog, MinimizeBox = false, MaximizeBox = false,
             ShowInTaskbar = false, KeyPreview = true, BackColor = AppTheme.Surface, Font = AppTheme.NormalFont
         };
@@ -203,7 +203,7 @@ public static class ModernMessageDialog
             if(family){grid.ShowCellToolTips=false;StyleTotalsRow();}
             grid.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCellsExceptHeaders;
             grid.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
-            grid.Height = grid.ColumnHeadersHeight + Math.Min(8, Math.Max(1, records.Rows.Count)) * AppMetrics.GridRowHeight + AppScale.Scale(8);
+            grid.Height = grid.ColumnHeadersHeight + Math.Min(family ? 5 : 8, Math.Max(1, records.Rows.Count)) * AppMetrics.GridRowHeight + AppScale.Scale(8);
             recordsGrid = grid;
             recordsRow = body.RowCount;
             Add(grid);
@@ -250,7 +250,8 @@ public static class ModernMessageDialog
                 // requires more space than a small dialog can provide.
                 UiHelper.FitColumnsToWidth(recordsGrid);
                 recordsGrid.AutoResizeRows(DataGridViewAutoSizeRowsMode.AllCellsExceptHeaders);
-                int rowsHeight = recordsGrid.Rows.Cast<DataGridViewRow>().Take(8).Sum(row => row.Height);
+                int visibleRowLimit = family ? 5 : 8;
+                int rowsHeight = recordsGrid.Rows.Cast<DataGridViewRow>().Take(visibleRowLimit).Sum(row => row.Height);
                 int columnsWidth=recordsGrid.Columns.GetColumnsWidth(DataGridViewElementStates.Visible);
                 int scrollHeight=columnsWidth>recordsGrid.DisplayRectangle.Width
                     ?SystemInformation.HorizontalScrollBarHeight:0;
@@ -307,6 +308,16 @@ public static class ModernMessageDialog
             FitBody(); body.PerformLayout();
             int fitted = body.GetPreferredSize(new Size(body.Width, 0)).Height + root.Padding.Vertical + AppMetrics.ButtonHeight + AppScale.Scale(32);
             form.ClientSize = new Size(width, Math.Min(Math.Max(AppScale.Scale(230), fitted), Math.Max(1, work.Height - AppScale.Scale(80))));
+            if (family)
+            {
+                // Re-center after the content-driven resize so large-family dialogs
+                // remain centered on the owner's screen instead of drifting vertically.
+                int left = work.Left + (work.Width - form.Width) / 2;
+                int top = work.Top + (work.Height - form.Height) / 2;
+                form.Location = new Point(
+                    Math.Clamp(left, work.Left, Math.Max(work.Left, work.Right - form.Width)),
+                    Math.Clamp(top, work.Top, Math.Max(work.Top, work.Bottom - form.Height)));
+            }
             form.ActiveControl = initialFocus;
         };
         form.KeyDown += (_, e) => {
