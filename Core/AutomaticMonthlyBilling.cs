@@ -208,7 +208,7 @@ internal sealed class BillingRecoveryDialog : ApplicationWindowForm
         root.RowStyles.Add(new RowStyle(SizeType.Absolute,
             Math.Max(AppMetrics.TextHeight(AppTheme.PageTitleFont) + AppMetrics.SpacingSm, AppScale.Scale(38))));
         root.RowStyles.Add(new RowStyle(SizeType.Absolute,
-            7 * AppMetrics.TextHeight(AppTheme.NormalFont) + AppMetrics.SpacingLg));
+            9 * AppMetrics.TextHeight(AppTheme.NormalFont) + AppMetrics.SpacingLg));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, AppMetrics.ButtonHeight + AppMetrics.SpacingLg));
 
