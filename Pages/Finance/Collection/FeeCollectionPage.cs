@@ -3198,6 +3198,27 @@ public sealed partial class FeeCollectionPage : V2Page, IBusyPage, IUnsavedChang
         /* The grid is the only thing that knows whether there is anything to collect, and this method runs on every path that can change it. */
         UpdateProcessCollectionAvailability();
     }
+    private static string FormatRecoverySummary(string summary)
+    {
+        const string studentsMarker = "\r\nStudents: ";
+        int studentsStart = summary.LastIndexOf(studentsMarker, StringComparison.Ordinal);
+        if (studentsStart < 0)
+            return summary.Length <= 900 ? summary : summary[..900] + "…";
+
+        string description = summary[..studentsStart];
+        if (description.Length > 500)
+            description = description[..497] + "…";
+
+        string[] students = summary[(studentsStart + studentsMarker.Length)..]
+            .Split(", ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        const int visibleStudentLimit = 6;
+        string studentList = string.Join("\n  • ", students.Take(visibleStudentLimit));
+        if (students.Length > visibleStudentLimit)
+            studentList += $"\n  • … and {students.Length - visibleStudentLimit} more student(s)";
+
+        return description + studentsMarker + studentList;
+    }
+
     /* This is a business operation (it posts a payment/refund/reversal), not an event boundary, so it returns Task and can be awaited, sequenced and tested. */
     private BusyScope HoldSubmittedInputs() => BeginBusy(string.Empty, this);
     private async Task ProcessTransaction()
@@ -3210,11 +3231,13 @@ public sealed partial class FeeCollectionPage : V2Page, IBusyPage, IUnsavedChang
             var pending = CollectionRecoveryJournal.ReadPending();
             if (pending is not null)
             {
+                string readableSummary = FormatRecoverySummary(pending.Summary);
                 if (Confirm(
                     "A previous collection was interrupted and may already have been recorded.\n\n" +
-                    pending.Summary + $"\nStarted: {pending.StartedUtc.ToLocalTime():dd-MM-yyyy HH:mm}\n\n" +
-                    "Check Payment History and receipts for every student listed above. " +
-                    "Have you checked those records and established whether this collection was recorded?\n\n" +
+                    readableSummary + $"\nStarted: {pending.StartedUtc.ToLocalTime():dd-MM-yyyy HH:mm}\n\n" +
+                    "Check Payment History and receipts for every student in the interrupted collection. " +
+                    "The list is shortened here for readability; the recovery record retains the full student list. " +
+                    "Have you established whether this collection was recorded?\n\n" +
                     "Yes clears this recovery notice and the current entries. It does not record a payment.",
                     "Review Interrupted Collection", defaultYes: false))
                 {
