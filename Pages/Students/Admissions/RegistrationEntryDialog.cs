@@ -4,7 +4,22 @@ namespace FMSC_SMS.Pages.Students.Admissions;
 
 internal sealed class RegistrationEntryDialog : ApplicationWindowForm
 {
+    private ModernButton? saveRegistrationButton;
     internal int SavedAdmissionId { get; private set; }
+
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        // The embedded QuickRegistrationFormPage owns focus most of the time, so
+        // the parent shortcut controller may dispatch to that page instead of this
+        // dialog. Handle Ctrl+S here to invoke the dialog's actual Save Registration action.
+        if (keyData == (Keys.Control | Keys.S))
+        {
+            if (saveRegistrationButton is { Enabled: true, Visible: true } button)
+                button.PerformClick();
+            return true;
+        }
+        return base.ProcessCmdKey(ref msg, keyData);
+    }
     internal RegistrationEntryDialog(Action<Func<Control>, string, string> navigate, int anchor, string parent, string phone, string address, string birth = "")
     {
         Text = "Admit Sibling";
@@ -13,6 +28,7 @@ internal sealed class RegistrationEntryDialog : ApplicationWindowForm
         var page = new QuickRegistrationFormPage(navigate, 0, initialize: false) { Dock = DockStyle.Fill };
         page.PrepareForEmbedding(keepActions: false);
         var save = new ModernButton { Text = "Save Registration", ThemeRole = "Success", AutoSize = true };
+        saveRegistrationButton = save;
         SetSaveShortcut(save);
         var close = new ModernButton { Text = "Close", AutoSize = true };
         var actions = HumanUi.ButtonRow(save, close); actions.Dock = DockStyle.Fill;
