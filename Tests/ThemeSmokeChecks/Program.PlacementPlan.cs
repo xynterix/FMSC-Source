@@ -81,7 +81,36 @@ internal static partial class Program
                     data.Rows[0]["Decision"]="HOLD";Call(page,"Suggest");Check(Convert.ToInt32(data.Rows[0]["Destination"])==1,"Repeat keeps the original placement.");
                     data.Rows[0]["Decision"]="SKIP";Call(page,"UpdateTotals");Check(Field<Label>(page,"totals").Text.Contains("1 skipped"),"Skipping is separate from repeating.");
                     data.Columns.Add("StudentName");data.Columns.Add("Current");data.Rows[0]["StudentName"]="Fictional Student A";data.Rows[0]["Current"]="Campus A / One / A";data.Rows[0]["Decision"]="PROMOTE";data.Rows[1]["StudentName"]="Fictional Student B";data.Rows[1]["Current"]="Campus A / Two / A";Call(page,"Suggest");
+                    data.Columns.Add("AdmissionNumber");data.Columns.Add("AdmissionId",typeof(int));
+                    data.Rows[0]["AdmissionNumber"]="1001";data.Rows[0]["AdmissionId"]=1;
+                    data.Rows[1]["AdmissionNumber"]="1002";data.Rows[1]["AdmissionId"]=2;
                     var destinations=placements.Copy();var blank=destinations.NewRow();blank["ClassSectionId"]=0;blank["Display"]="Choose a destination";destinations.Rows.InsertAt(blank,0);((DataGridViewComboBoxColumn)grid.Columns["Destination"]).DataSource=destinations;grid.DataSource=data;
+                    bool reviewChecked=false;Exception? reviewCheckError=null;
+                    using(var closeReview=new System.Windows.Forms.Timer{Interval=100})
+                    {
+                        closeReview.Tick+=(_,_)=>{
+                            var dialog=Application.OpenForms.Cast<Form>().FirstOrDefault(form=>form.Text=="Review Placement Plan");
+                            if(dialog is null)return;
+                            closeReview.Stop();
+                            try
+                            {
+                                var reviewGrid=Descendants(dialog).OfType<DataGridView>().Single();
+                                var reviewRows=(DataTable)reviewGrid.DataSource!;
+                                var reviewColumns=reviewGrid.Columns.Cast<DataGridViewColumn>().Where(column=>column.Visible).OrderBy(column=>column.DisplayIndex).Select(column=>column.HeaderText).ToArray();
+                                Check(reviewColumns.SequenceEqual(new[]{"Admission Number","Student","From","Decision","To","Fees Before","Fees After","Bill Difference"}),"Review Placement Plan displays Admission Number before Student.");
+                                Check(Convert.ToString(reviewRows.Rows[0]["Admission Number"])=="1001" && Convert.ToString(reviewRows.Rows[0]["Student"])=="Fictional Student A","Review Placement Plan binds the correct admission number to its student.");
+                                reviewChecked=true;
+                            }
+                            catch(Exception ex){reviewCheckError=ex;}
+                            dialog.DialogResult=DialogResult.Cancel;dialog.Close();
+                        };
+                        closeReview.Start();
+                        using var reviewed=JsonDocument.Parse("""{"Effects":[{"AdmissionId":1,"BillDifference":0}]}""");
+                        var reviewMethod=typeof(StudentPlacementPage).GetMethod("ReviewDetails",flags)!;
+                        _=reviewMethod.Invoke(page,new object[]{new[]{data.Rows[0]},reviewed.RootElement,"Fictional test review"});
+                    }
+                    Check(reviewCheckError is null,reviewCheckError?.ToString()??"Review dialog assertions completed.");
+                    Check(reviewChecked,"Review Placement Plan dialog was inspected by the smoke test.");
                     var years=new DataTable();years.Columns.Add("AcademicYearId",typeof(int));years.Columns.Add("YearName");years.Rows.Add(9,"Source Year");years.Rows.Add(10,"Next Year");foreach(var name in new[]{"sourceYear","targetYear"})Field<LookupBox>(page,name).Bind(years.Copy(),"AcademicYearId","YearName");Field<LookupBox>(page,"sourceYear").SelectedValue=9;Field<LookupBox>(page,"targetYear").SelectedValue=10;Field<CheckBox>(page,"carry").Checked=true;
                 }
                 else
