@@ -71,6 +71,7 @@ public sealed partial class StudentPlacementPage : V2Page, IBusyPage
         var actions=CenteredActionRow(new Control[]{load,select,clear},new Control[]{suggest,assign},new Control[]{studentActions,correction,findUndo},new Control[]{review,retry});
         students.Dock=DockStyle.Fill;students.AutoGenerateColumns=false;students.MultiSelect=true;students.SelectionMode=DataGridViewSelectionMode.FullRowSelect;
         students.Columns.Add(new DataGridViewCheckBoxColumn{Name="Selected",DataPropertyName="Selected",HeaderText="Process",Width=65});
+        students.Columns.Add(new DataGridViewTextBoxColumn{Name="AdmissionNumber",DataPropertyName="AdmissionNumber",HeaderText="Admission Number",ReadOnly=true,Width=130});
         students.Columns.Add(new DataGridViewTextBoxColumn{Name="StudentName",DataPropertyName="StudentName",HeaderText="Student",ReadOnly=true,Width=170});
         students.Columns.Add(new DataGridViewTextBoxColumn{Name="Current",DataPropertyName="Current",HeaderText="Current Placement",ReadOnly=true,Width=220});
         var decisions=new DataTable();decisions.Columns.Add("Value");decisions.Columns.Add("Label");
@@ -459,7 +460,7 @@ public sealed partial class StudentPlacementPage : V2Page, IBusyPage
     }
     private bool ReviewDetails(DataRow[] selected,JsonElement reviewed,string planReason)
     {
-        var summary=new DataTable();foreach(var name in new[]{"Student","From","Decision","To","Fees Before","Fees After","Bill Difference"})summary.Columns.Add(name);
+        var summary=new DataTable();foreach(var name in new[]{"Admission Number","Student","From","Decision","To","Fees Before","Fees After","Bill Difference"})summary.Columns.Add(name);
         string FeeText(JsonElement effect, string property)
         {
             // SQL FOR JSON omits null properties when there are no assignments.
@@ -475,7 +476,7 @@ public sealed partial class StudentPlacementPage : V2Page, IBusyPage
             return $"{f.GetProperty("FeeTypeName").GetString()}: {f.GetProperty("Amount").GetDecimal()-f.GetProperty("DiscountAmount").GetDecimal():N0} / {f.GetProperty("Frequency").GetString()}{period}";
         }));
         }
-        foreach(var row in selected){var dest=placements.AsEnumerable().Single(p=>Convert.ToInt32(p["ClassSectionId"])==Convert.ToInt32(row["Destination"]));var effect=reviewed.GetProperty("Effects").EnumerateArray().Single(e=>e.GetProperty("AdmissionId").GetInt32()==Convert.ToInt32(row["AdmissionId"]));summary.Rows.Add(row["StudentName"],row["Current"],row["Decision"],dest["Display"],FeeText(effect,"FeesBefore"),FeeText(effect,"FeesAfter"),effect.GetProperty("BillDifference").GetDecimal().ToString("N0"));}
+        foreach(var row in selected){var dest=placements.AsEnumerable().Single(p=>Convert.ToInt32(p["ClassSectionId"])==Convert.ToInt32(row["Destination"]));var effect=reviewed.GetProperty("Effects").EnumerateArray().Single(e=>e.GetProperty("AdmissionId").GetInt32()==Convert.ToInt32(row["AdmissionId"]));summary.Rows.Add(row["AdmissionNumber"],row["StudentName"],row["Current"],row["Decision"],dest["Display"],FeeText(effect,"FeesBefore"),FeeText(effect,"FeesAfter"),effect.GetProperty("BillDifference").GetDecimal().ToString("N0"));}
         var grid=HumanUi.Grid(false);grid.Dock=DockStyle.Fill;grid.DataSource=summary;
         var root=new TableLayoutPanel{Dock=DockStyle.Fill,RowCount=3,ColumnCount=1,Padding=new Padding(12)};
         root.RowStyles.Add(new RowStyle(SizeType.Absolute,85));root.RowStyles.Add(new RowStyle(SizeType.Percent,100));root.RowStyles.Add(new RowStyle(SizeType.Absolute,AppMetrics.ButtonRowHeight));
