@@ -81,35 +81,144 @@ internal sealed class BillingRecoveryDialog : ApplicationWindowForm
     {
         Text = "Missed Monthly Fees";
         StartPosition = FormStartPosition.CenterParent;
-        Size = new Size(750, 470);
-        MinimumSize = new Size(620, 370);
-        var text = new Label { Dock = DockStyle.Top, AutoSize = true, MaximumSize = new Size(680, 0),
-            Padding = new Padding(12), Text = "Some earlier months have not been billed. Review the months and amounts below.\n" +
-            "Bill missed months too: creates the listed earlier charges as well as this month's fees.\n" +
-            "Bill this month only: leaves earlier gaps unbilled and available for later administrative recovery.\n" +
-            "Previously reversed fees and periods before approved billing commencement are excluded." };
-        var grid = new DataGridView { Dock = DockStyle.Fill, ReadOnly = true, AllowUserToAddRows = false,
-            AllowUserToDeleteRows = false, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-            AutoGenerateColumns = false };
-        foreach (string column in new[] { "BillingMonth", "Students", "Charges", "Amount" })
-            grid.Columns.Add(new DataGridViewTextBoxColumn { Name = column, DataPropertyName = column,
-                HeaderText = column == "BillingMonth" ? "Billing month" : column });
-        grid.DataSource = months.Copy();
-        grid.Columns["BillingMonth"].DefaultCellStyle.Format = "MMMM yyyy";
-        grid.Columns["Amount"].DefaultCellStyle.Format = "N0";
-        var buttons = new FlowLayoutPanel { Dock = DockStyle.Bottom, AutoSize = true, Padding = new Padding(10), WrapContents = true };
-        Button Choice(string caption, bool all)
+        FormBorderStyle = FormBorderStyle.Sizable;
+        MinimizeBox = false;
+        MaximizeBox = false;
+        ShowInTaskbar = false;
+        ClientSize = new Size(AppScale.Scale(900), AppScale.Scale(560));
+        MinimumSize = new Size(AppScale.Scale(680), AppScale.Scale(430));
+        BackColor = AppTheme.PageBackground;
+        Font = AppTheme.NormalFont;
+
+        var heading = new Label
         {
-            var button = new Button { Text = caption, AutoSize = true, Padding = new Padding(8) };
-            button.Click += (_, _) => { IncludeMissed = all; Reviewed = true; DialogResult = DialogResult.OK; };
-            buttons.Controls.Add(button);
+            Text = "Missed Monthly Fees",
+            Dock = DockStyle.Fill,
+            Font = AppTheme.PageTitleFont,
+            ForeColor = AppTheme.Text,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Margin = Padding.Empty
+        };
+        var explanation = new Label
+        {
+            Text = "Some earlier months have not been billed. Review the months and amounts below.\r\n\r\n" +
+                   "Bill missed months too: creates the listed earlier charges as well as this month's fees.\r\n" +
+                   "Bill this month only: leaves earlier gaps unbilled and available for later administrative recovery.\r\n" +
+                   "Previously reversed fees and periods before approved billing commencement are excluded.",
+            Dock = DockStyle.Fill,
+            AutoSize = false,
+            Font = AppTheme.NormalFont,
+            ForeColor = AppTheme.MutedText,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Margin = Padding.Empty,
+            Padding = new Padding(0, AppMetrics.SpacingXs, 0, AppMetrics.SpacingSm)
+        };
+
+        var grid = HumanUi.Grid(false);
+        grid.AutoGenerateColumns = false;
+        grid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        grid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "BillingMonth",
+            DataPropertyName = "BillingMonth",
+            HeaderText = "Billing month",
+            FillWeight = 160,
+            MinimumWidth = AppScale.Scale(180)
+        });
+        grid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "Students",
+            DataPropertyName = "Students",
+            HeaderText = "Students",
+            FillWeight = 75,
+            MinimumWidth = AppScale.Scale(90)
+        });
+        grid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "Charges",
+            DataPropertyName = "Charges",
+            HeaderText = "Charges",
+            FillWeight = 75,
+            MinimumWidth = AppScale.Scale(90)
+        });
+        grid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "Amount",
+            DataPropertyName = "Amount",
+            HeaderText = "Amount",
+            FillWeight = 100,
+            MinimumWidth = AppScale.Scale(120)
+        });
+        grid.DataSource = months.Copy();
+        grid.Columns["BillingMonth"].DefaultCellStyle.Format = "dd-MMM-yyyy";
+        grid.Columns["Students"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+        grid.Columns["Charges"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+        grid.Columns["Amount"].DefaultCellStyle.Format = "N0";
+        grid.Columns["Amount"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+        grid.ClearSelection();
+        grid.CurrentCell = null;
+        grid.Margin = Padding.Empty;
+
+        ModernButton Choice(string caption, bool all, string themeRole)
+        {
+            var button = new ModernButton
+            {
+                Text = caption,
+                ThemeRole = themeRole,
+                Height = AppMetrics.ButtonHeight,
+                Width = AppMetrics.TextWidth(caption, AppTheme.ButtonFont, AppScale.Scale(40)) + AppScale.Scale(32),
+                DialogResult = DialogResult.None,
+                Margin = new Padding(AppScale.Scale(4), 0, AppScale.Scale(4), 0)
+            };
+            button.Click += (_, _) =>
+            {
+                IncludeMissed = all;
+                Reviewed = true;
+                DialogResult = DialogResult.OK;
+                Close();
+            };
             return button;
         }
-        Choice("Bill the missed months too", true);
-        Choice("Bill this month only", false);
-        var later = new Button { Text = "Decide later", AutoSize = true, DialogResult = DialogResult.Cancel };
-        buttons.Controls.Add(later);
-        CancelButton = later;
-        Controls.Add(grid); Controls.Add(text); Controls.Add(buttons);
+
+        var includeMissedButton = Choice("Bill the missed months too", true, "Primary");
+        var currentMonthButton = Choice("Bill this month only", false, "Secondary");
+        var laterButton = new ModernButton
+        {
+            Text = "Decide later",
+            ThemeRole = "Secondary",
+            Height = AppMetrics.ButtonHeight,
+            Width = AppMetrics.TextWidth("Decide later", AppTheme.ButtonFont, AppScale.Scale(40)) + AppScale.Scale(32),
+            DialogResult = DialogResult.Cancel,
+            Margin = new Padding(AppScale.Scale(4), 0, AppScale.Scale(4), 0)
+        };
+        var buttons = HumanUi.DialogButtons(includeMissedButton, currentMonthButton, laterButton);
+        buttons.Dock = DockStyle.Fill;
+        buttons.Margin = Padding.Empty;
+
+        var root = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 4,
+            Padding = new Padding(AppMetrics.SpacingLg),
+            Margin = Padding.Empty,
+            BackColor = AppTheme.PageBackground
+        };
+        root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute,
+            Math.Max(AppMetrics.TextHeight(AppTheme.PageTitleFont) + AppMetrics.SpacingSm, AppScale.Scale(38))));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute,
+            5 * AppMetrics.TextHeight(AppTheme.NormalFont) + AppMetrics.SpacingLg));
+        root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, AppMetrics.ButtonHeight + AppMetrics.SpacingLg));
+
+        root.Controls.Add(heading, 0, 0);
+        root.Controls.Add(explanation, 0, 1);
+        root.Controls.Add(grid, 0, 2);
+        root.Controls.Add(buttons, 0, 3);
+        Controls.Add(root);
+
+        CancelButton = laterButton;
+        AcceptButton = includeMissedButton;
     }
 }
