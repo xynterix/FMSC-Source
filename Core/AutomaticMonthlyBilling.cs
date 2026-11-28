@@ -191,9 +191,19 @@ internal sealed class BillingRecoveryDialog : ApplicationWindowForm
             DialogResult = DialogResult.Cancel,
             Margin = new Padding(AppScale.Scale(4), 0, AppScale.Scale(4), 0)
         };
-        var buttons = HumanUi.DialogButtons(includeMissedButton, currentMonthButton, laterButton);
-        buttons.Dock = DockStyle.Fill;
-        buttons.Margin = Padding.Empty;
+        var buttons = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false,
+            AutoSize = false,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty,
+            Anchor = AnchorStyles.Left | AnchorStyles.Right
+        };
+        buttons.Controls.Add(includeMissedButton);
+        buttons.Controls.Add(currentMonthButton);
+        buttons.Controls.Add(laterButton);
 
         var root = new TableLayoutPanel
         {
@@ -219,6 +229,6 @@ internal sealed class BillingRecoveryDialog : ApplicationWindowForm
         Controls.Add(root);
 
         CancelButton = laterButton;
-        AcceptButton = includeMissedButton;
+        AcceptButton = null;
     }
 }
