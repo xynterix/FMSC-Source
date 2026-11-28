@@ -68,6 +68,9 @@ internal static partial class Program
                 Check(choices.Cast<DataRowView>().Select(row=>Convert.ToString(row["Value"])).SequenceEqual(expected),"Decision choices match the page's task.");
                 if(task==StudentPlacementTask.AnnualPromotion)
                 {
+                    var admissionNumber=grid.Columns["AdmissionNumber"];
+                    Check(admissionNumber is not null && admissionNumber.Visible && admissionNumber.ReadOnly && admissionNumber.DataPropertyName=="AdmissionNumber" && admissionNumber.DisplayIndex<grid.Columns["StudentName"].DisplayIndex,
+                        "Annual Promotion displays the read-only Admission Number column before Student.");
                     Check(Field<ModernComboBox>(page,"fees").Parent is null && Field<LookupBox>(page,"targetClass").Parent is null && Field<CheckBox>(page,"carry").Visible,"Annual Promotion offers concessions without transfer-only fields.");
                     var catalog=Field<DataTable>(page,"catalog");catalog.Columns.Add("ClassId",typeof(int));catalog.Columns.Add("AcademicProgramId",typeof(int));catalog.Columns.Add("DisplayOrder",typeof(int));catalog.Rows.Add(1,1,1);catalog.Rows.Add(2,1,2);
                     var placements=Field<DataTable>(page,"placements");foreach(string name in new[]{"ClassSectionId","CampusId","ClassId","SectionId"})placements.Columns.Add(name,typeof(int));placements.Columns.Add("IsActive",typeof(bool));placements.Columns.Add("Display");placements.Rows.Add(1,1,1,1,true,"Campus A / One / A");placements.Rows.Add(2,1,2,1,true,"Campus A / Two / A");
